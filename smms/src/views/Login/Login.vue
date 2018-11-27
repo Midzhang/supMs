@@ -32,6 +32,7 @@
     </div>
 </template>
 <script>
+import qs from 'qs';
 export default {
   data() {
     // 自定义一个验证密码一致性的函数
@@ -83,20 +84,40 @@ export default {
       this.$refs[formName].validate(valid => {
         // 如果所有的表单前端验证都合法 那么 valid就是true 那么就可以提交给后端
         // 否则 只要有一个表单验证不合法 valid就是false 那么不能提交
-        if (valid) {
+         if (valid) {
+          // 收集
+          let params = {
+            username: this.loginForm.username,
+            password: this.loginForm.password
+          }
 
-          alert("前端验证通过，可以发送给后端!");
-          // 前端验证通过 发送ajax 把账号 和 密码 发送给后端 验证 用户名和密码是否存在
-          // 收集账号和密码（获取用户输入的账号和密码 发送给前端）
-          let username = this.loginForm.username;
-          let password = this.loginForm.password;
-
-          console.log(username, password);
-
-          // 通过路由跳转 跳转到后端系统首页
-        //   console.log(this.$router) // vue实例可以直接获取路由对象
-          this.$router.push('/');
+          // 允许携带cookie
+          this.axios.defaults.withCredentials=true;
           
+          // 写ajax 把用户名和密码 一起发送给后端
+          this.axios.post('http://127.0.0.1:3000/users/checklogin',
+            qs.stringify(params),
+            { headers: {'Content-Type':'application/x-www-form-urlencoded'} }
+          )
+            .then(response => {
+              // 接收后端响应的数据 判断
+              if (response.data.rstCode === 1) {
+                // 成功 弹出登录成功的提示
+                this.$message({
+                  type: 'success',
+                  message: response.data.msg
+                });
+
+                // 跳转到首页
+                setTimeout(() => {
+                  this.$router.push("/");
+                }, 500)
+              } else {
+                // 失败 弹出失败的提示
+                this.$message.error(response.data.msg)
+              }
+            })
+         
         } else {
           console.log("前端验证不通过, 不能发送");
           return false;
